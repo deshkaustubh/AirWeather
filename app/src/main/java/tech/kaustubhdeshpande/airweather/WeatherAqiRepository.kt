@@ -13,11 +13,17 @@ class WeatherAqiRepository(
     private val weatherApi: OpenMeteoWeatherApi,
     private val airApi: OpenMeteoAirQualityApi
 ) {
-    // Fixed location: Kandivali East, Thakur Village
     private val lat = 19.1864
     private val lon = 72.8656
-
     private val fmt = DateTimeFormatter.ISO_DATE_TIME
+
+    // Storage helpers
+    suspend fun getCachedWeather(): WeatherEntity? = withContext(Dispatchers.IO) { weatherDao.getWeatherSync() }
+    suspend fun getCachedAqi(): AqiEntity? = withContext(Dispatchers.IO) { aqiDao.getAqiSync() }
+    suspend fun clearCache() = withContext(Dispatchers.IO) {
+        weatherDao.clear()
+        aqiDao.clear()
+    }
 
     suspend fun refreshWeather(): WeatherEntity? = withContext(Dispatchers.IO) {
         try {
@@ -33,8 +39,6 @@ class WeatherAqiRepository(
 
             val temp = r.current_weather?.temperature
             val code = r.current_weather?.weathercode
-
-            // Pick humidity at the hour closest to "now"
             val hTimes = r.hourly?.time ?: emptyList()
             val humid = r.hourly?.relativehumidity_2m
             val idx = closestHourIndex(hTimes)
@@ -42,7 +46,7 @@ class WeatherAqiRepository(
 
             if (temp != null && code != null && humidity != null) {
                 val entity = WeatherEntity(
-                    temperature = (temp * 10.0).roundToInt() / 10.0, // 1 decimal
+                    temperature = (temp * 10.0).roundToInt() / 10.0,
                     condition = weatherCodeToString(code),
                     humidity = humidity,
                     lastUpdated = System.currentTimeMillis()
@@ -69,19 +73,10 @@ class WeatherAqiRepository(
             )
 
             val h = r.hourly ?: return@withContext aqiDao.getAqiSync()
-
             val idx = closestHourIndex(h.time ?: emptyList())
 
-            // Prefer API us_aqi at current hour; else compute from PM2.5; else fallback last available
-            val usAqiAtIdx = idx?.let { i ->
-                val list = h.us_aqi
-                if (list != null && i in list.indices) list[i].roundToInt() else null
-            }
-            val pm25AtIdx = idx?.let { i ->
-                val list = h.pm2_5
-                if (list != null && i in list.indices) list[i] else null
-            }
-
+            val usAqiAtIdx = idx?.let { i -> h.us_aqi?.getOrNull(i)?.roundToInt() }
+            val pm25AtIdx = idx?.let { i -> h.pm2_5?.getOrNull(i) }
             val usAqi = usAqiAtIdx ?: pm25AtIdx?.let { computeUsAqiFromPm25(it) }
             ?: h.us_aqi?.lastOrNull()?.roundToInt()
             ?: h.pm2_5?.lastOrNull()?.let { computeUsAqiFromPm25(it) }
@@ -90,7 +85,6 @@ class WeatherAqiRepository(
                 return@withContext aqiDao.getAqiSync()
             }
 
-            // Dominant pollutant heuristic at the chosen hour
             val dom = run {
                 val pairs = listOfNotNull(
                     "PM2.5" to (pm25AtIdx ?: h.pm2_5?.lastOrNull()),
@@ -116,7 +110,6 @@ class WeatherAqiRepository(
         }
     }
 
-    // Choose index of hour closest to "now" (local time), using returned local times.
     private fun closestHourIndex(times: List<String>): Int? {
         if (times.isEmpty()) return null
         val now = LocalDateTime.now()
@@ -133,7 +126,6 @@ class WeatherAqiRepository(
         return bestIdx
     }
 
-    // US EPA piecewise linear mapping from PM2.5 µg/m³ to US AQI (approximate)
     private fun computeUsAqiFromPm25(c: Double): Int {
         data class Bp(val clow: Double, val chigh: Double, val ilow: Int, val ihigh: Int)
         val bps = listOf(

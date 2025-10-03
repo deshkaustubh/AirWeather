@@ -4,6 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import tech.kaustubhdeshpande.airweather.ui.theme.AirWeatherTheme
 
@@ -23,12 +27,27 @@ class MainActivity : ComponentActivity() {
             airApi = airApi
         )
 
-        val factory = WeatherAqiViewModelFactory(repo)
-        val vm = ViewModelProvider(this, factory)[WeatherAqiViewModel::class.java]
+        // ViewModels
+        val weatherFactory = WeatherAqiViewModelFactory(repo)
+        val weatherVm = ViewModelProvider(this, weatherFactory)[WeatherAqiViewModel::class.java]
+
+        val storageFactory = StorageViewModelFactory(repo, applicationContext)
+        val storageVm = ViewModelProvider(this, storageFactory)[StorageViewModel::class.java]
 
         setContent {
             AirWeatherTheme {
-                HomeScreen(viewModel = vm)
+                var showStorage by rememberSaveable { mutableStateOf(false) }
+                if (showStorage) {
+                    StorageScreen(
+                        viewModel = storageVm,
+                        onBack = { showStorage = false }
+                    )
+                } else {
+                    HomeScreen(
+                        viewModel = weatherVm,
+                        onOpenStorage = { showStorage = true }
+                    )
+                }
             }
         }
     }

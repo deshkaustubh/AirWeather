@@ -12,4 +12,7 @@ interface AqiDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(aqi: AqiEntity)
+
+    @Query("DELETE FROM aqi")
+    suspend fun clear()
 }

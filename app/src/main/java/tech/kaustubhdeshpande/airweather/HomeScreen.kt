@@ -11,7 +11,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun HomeScreen(viewModel: WeatherAqiViewModel) {
+fun HomeScreen(
+    viewModel: WeatherAqiViewModel,
+    onOpenStorage: () -> Unit = {}
+) {
     val ui by viewModel.ui.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -66,6 +69,7 @@ fun HomeScreen(viewModel: WeatherAqiViewModel) {
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = { viewModel.fetch() }) { Text("Refresh") }
+                OutlinedButton(onClick = onOpenStorage) { Text("Storage") }
                 if (ui.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
                 }
