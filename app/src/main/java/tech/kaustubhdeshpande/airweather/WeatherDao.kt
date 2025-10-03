@@ -10,9 +10,12 @@ interface WeatherDao {
     @Query("SELECT * FROM weather WHERE id = 0 LIMIT 1")
     fun getWeatherSync(): WeatherEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(weather: WeatherEntity)
+    @Insert
+    suspend fun insert(weather: WeatherEntity)
 
     @Query("DELETE FROM weather")
     suspend fun clear()
+
+    @Query("SELECT * FROM weather")
+    fun getAll(): List<WeatherEntity>
 }

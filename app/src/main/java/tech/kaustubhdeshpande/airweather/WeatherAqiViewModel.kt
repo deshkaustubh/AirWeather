@@ -33,4 +33,16 @@ class WeatherAqiViewModel(
             }
         }
     }
+
+    fun saveCurrentData() {
+        val weather = _ui.value.weather
+        val aqi = _ui.value.aqi
+        viewModelScope.launch {
+            weather?.let { repo.saveWeather(it) }
+            aqi?.let { repo.saveAqi(it) }
+        }
+    }
+
+    suspend fun getAllSavedWeather(): List<WeatherEntity> = repo.getAllWeather()
+    suspend fun getAllSavedAqi(): List<AqiEntity> = repo.getAllAqi()
 }

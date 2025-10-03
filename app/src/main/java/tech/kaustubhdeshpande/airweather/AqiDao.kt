@@ -10,9 +10,12 @@ interface AqiDao {
     @Query("SELECT * FROM aqi WHERE id = 0 LIMIT 1")
     fun getAqiSync(): AqiEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(aqi: AqiEntity)
+    @Insert
+    suspend fun insert(aqi: AqiEntity)
 
     @Query("DELETE FROM aqi")
     suspend fun clear()
+
+    @Query("SELECT * FROM aqi")
+    fun getAll(): List<AqiEntity>
 }

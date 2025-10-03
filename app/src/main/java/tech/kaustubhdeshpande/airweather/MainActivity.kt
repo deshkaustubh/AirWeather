@@ -38,8 +38,8 @@ class MainActivity : ComponentActivity() {
             AirWeatherTheme {
                 var showStorage by rememberSaveable { mutableStateOf(false) }
                 if (showStorage) {
-                    StorageScreen(
-                        viewModel = storageVm,
+                    SavedDataScreen(
+                        viewModel = weatherVm,
                         onBack = { showStorage = false }
                     )
                 } else {

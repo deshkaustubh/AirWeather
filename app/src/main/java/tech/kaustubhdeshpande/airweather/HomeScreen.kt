@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,8 +42,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
-import java.util.Locale
 import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -183,27 +184,37 @@ fun HomeScreen(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                "Air Quality",
+                                "AQI",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
-
                         if (ui.aqi != null) {
                             val a = ui.aqi!!
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                verticalAlignment = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                AqiBadge(aqi = a.aqi, category = a.category)
                                 Text(
-                                    "Main pollutant: ${a.mainPollutant}",
-                                    style = MaterialTheme.typography.bodyMedium
+                                    "${a.aqi}",
+                                    style = MaterialTheme.typography.displaySmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    a.category,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                InfoChip(label = "Updated", value = formatTime(a.lastUpdated))
+                                InfoChip(
+                                    label = "Main Pollutant",
+                                    value = a.mainPollutant
+                                )
+                                InfoChip(
+                                    label = "Updated",
+                                    value = formatTime(a.lastUpdated)
+                                )
                             }
                         } else {
                             Text(
@@ -213,6 +224,14 @@ fun HomeScreen(
                             )
                         }
                     }
+                }
+
+                // Save button
+                Button(
+                    onClick = { viewModel.saveCurrentData() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save")
                 }
 
                 // Footer actions

@@ -51,7 +51,7 @@ class WeatherAqiRepository(
                     humidity = humidity,
                     lastUpdated = System.currentTimeMillis()
                 )
-                weatherDao.upsert(entity)
+                weatherDao.insert(entity)
                 entity
             } else {
                 weatherDao.getWeatherSync()
@@ -77,9 +77,8 @@ class WeatherAqiRepository(
 
             val usAqiAtIdx = idx?.let { i -> h.us_aqi?.getOrNull(i)?.roundToInt() }
             val pm25AtIdx = idx?.let { i -> h.pm2_5?.getOrNull(i) }
-            val usAqi = usAqiAtIdx ?: pm25AtIdx?.let { computeUsAqiFromPm25(it) }
-            ?: h.us_aqi?.lastOrNull()?.roundToInt()
-            ?: h.pm2_5?.lastOrNull()?.let { computeUsAqiFromPm25(it) }
+            val usAqi = usAqiAtIdx ?: pm25AtIdx?.let { computeUsAqiFromPm25(it) } ?: h.us_aqi?.lastOrNull()?.roundToInt()
+                ?: h.pm2_5?.lastOrNull()?.let { computeUsAqiFromPm25(it) }
 
             if (usAqi == null) {
                 return@withContext aqiDao.getAqiSync()
@@ -103,12 +102,17 @@ class WeatherAqiRepository(
                 mainPollutant = dom,
                 lastUpdated = System.currentTimeMillis()
             )
-            aqiDao.upsert(entity)
+            aqiDao.insert(entity)
             entity
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             aqiDao.getAqiSync()
         }
     }
+
+    suspend fun saveWeather(weather: WeatherEntity) = withContext(Dispatchers.IO) { weatherDao.insert(weather) }
+    suspend fun saveAqi(aqi: AqiEntity) = withContext(Dispatchers.IO) { aqiDao.insert(aqi) }
+    suspend fun getAllWeather(): List<WeatherEntity> = withContext(Dispatchers.IO) { weatherDao.getAll() }
+    suspend fun getAllAqi(): List<AqiEntity> = withContext(Dispatchers.IO) { aqiDao.getAll() }
 
     private fun closestHourIndex(times: List<String>): Int? {
         if (times.isEmpty()) return null
